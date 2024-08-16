@@ -283,7 +283,7 @@ class ModelSimInterface(VsimSimulatorMixin, SimulatorInterface):  # pylint: disa
                 f"{design_to_optimize}",
                 f"-work {{{config.library_name}}}",
                 "-quiet",
-                f"-floatgenerics+{config.entity_name}.",
+                f"-floatgenerics+{config.entity_name}",
                 f"-o {{{simulation_target}}}",
                 self._vopt_extra_args(config),
             ]
