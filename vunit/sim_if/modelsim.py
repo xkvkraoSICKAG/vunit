@@ -97,7 +97,7 @@ class ModelSimInterface(VsimSimulatorMixin, SimulatorInterface):  # pylint: disa
             persistent,
             sim_cfg_file_name=str(Path(output_path) / "modelsim.ini"),
         )
-        self._libraries = []
+        self._library_names = []
         self._coverage_files = set()
         assert not (persistent and gui)
         self._create_modelsim_ini()
@@ -131,8 +131,12 @@ class ModelSimInterface(VsimSimulatorMixin, SimulatorInterface):  # pylint: disa
         mapped_libraries = self._get_mapped_libraries()
 
         for library in project.get_libraries():
-            self._libraries.append(library)
+            self._library_names.append(library.name)
             self.create_library(library.name, library.directory, mapped_libraries)
+
+        # Ensure library name order is deterministic between vopt and vcom/log calls to avoid
+        # vopt-10017 warning
+        self._library_names.sort()
 
     def compile_source_file_command(self, source_file):
         """
@@ -192,8 +196,8 @@ class ModelSimInterface(VsimSimulatorMixin, SimulatorInterface):  # pylint: disa
         args += source_file.compile_options.get("modelsim.vlog_flags", [])
         args += ["-work", source_file.library.name, source_file.name]
 
-        for library in self._libraries:
-            args += ["-L", library.name]
+        for library in self._library_names:
+            args += ["-L", library]
         for include_dir in source_file.include_dirs:
             args += [f"+incdir+{include_dir!s}"]
         for key, value in source_file.defines.items():
@@ -314,8 +318,8 @@ class ModelSimInterface(VsimSimulatorMixin, SimulatorInterface):  # pylint: disa
                 vopt_flags.insert(0, modelsimini_option)
 
         library_option = []
-        for library in self._libraries:
-            library_option += ["-L", library.name]
+        for library in self._library_names:
+            library_option += ["-L", library]
 
         vsim_flags += library_option
 
