@@ -109,11 +109,13 @@ class TestRunner(object):  # pylint: disable=too-many-instance-attributes
             sys.stderr = ThreadLocalOutput(self._local, self._stdout)
 
             # Start P-1 worker threads
-            for _ in range(self._num_threads - 1):
+            for runner_idx in range(self._num_threads - 1):
                 new_thread = threading.Thread(
                     target=self._run_thread,
                     args=(write_stdout, scheduler, num_tests, False),
                 )
+                # Set runner_idx attribute to allow simulators to create thread unique artifacts
+                new_thread.runner_idx = runner_idx
                 threads.append(new_thread)
                 new_thread.start()
 

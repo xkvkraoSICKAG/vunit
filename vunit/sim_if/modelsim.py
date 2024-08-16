@@ -17,6 +17,7 @@ from ..ostools import Process, file_exists
 from ..vhdl_standard import VHDL
 from . import SimulatorInterface, ListOfStringOption, StringOption, BooleanOption
 from .vsim_simulator_mixin import VsimSimulatorMixin, fix_path
+import threading
 
 LOGGER = logging.getLogger(__name__)
 
@@ -270,9 +271,13 @@ class ModelSimInterface(VsimSimulatorMixin, SimulatorInterface):  # pylint: disa
         )
 
         if three_step_flow:
-            # vopt has limitations on how the optimized design can be named. Simply removing
-            # non-alphanumeric characters is a simple solution to that
-            simulation_target = "opt_" + "".join(ch for ch in design_to_optimize if ch.isalnum())
+            simulation_target = f"{_clean_vopt_name(design_to_optimize)}_opt"
+
+            # Use a different optimization folder for each thread to prevent
+            # data race where different threads try to write the same vopt data
+            current_thread = threading.current_thread()
+            if hasattr(current_thread, "runner_idx"):
+                simulation_target += f"{current_thread.runner_idx}"
 
             vopt_flags = [
                 f"{design_to_optimize}",
@@ -499,3 +504,18 @@ def write_modelsimini(cfg, file_name):
     """
     with Path(file_name).open("w", encoding="utf-8") as optr:
         cfg.write(optr)
+
+
+def _clean_vopt_name(name):
+    """
+    vopt has limitations on how the optimized design can be named.
+    Simply removing non-alphanumeric characters is a simple solution to that
+    """
+
+    def _clean_char(ch):
+        if ch.isalnum():
+            return ch
+        else:
+            return '_'
+
+    return "".join(_clean_char(ch) for ch in name)
