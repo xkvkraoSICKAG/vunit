@@ -216,7 +216,7 @@ class ModelSimInterface(VsimSimulatorMixin, SimulatorInterface):  # pylint: disa
             os.makedirs(apath)
 
         if not file_exists(path):
-            proc = Process([str(Path(self._prefix) / "vlib"), "-unix", path], env=self.get_env())
+            proc = Process([str(Path(self._prefix) / "vlib"), "-unix", '-type', 'directory', path], env=self.get_env())
             proc.consume_output(callback=None)
 
         if library_name in mapped_libraries and mapped_libraries[library_name] == path:
